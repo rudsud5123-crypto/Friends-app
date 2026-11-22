@@ -447,6 +447,16 @@ img.avaImg{display:block;width:100%;height:100%;object-fit:cover;object-position
   border:1.5px solid rgba(91,164,217,0.22);font-size:9.5px;font-weight:800;color:#6A6252}
 .charPick img{width:100%;aspect-ratio:1/1;border-radius:50%;object-fit:cover}
 .charPick.on{border-color:rgba(228,88,79,0.6);background:linear-gradient(160deg,#FFEDE6,#FFF9EC);box-shadow:0 3px 10px rgba(228,88,79,0.13);color:#C9553F}
+.avaPhotoRow{display:flex;align-items:center;gap:9px;margin:8px 0 3px}
+.avaPhotoCur{display:block;width:46px;height:46px;flex:none;border-radius:50%;overflow:hidden;background:#FBF7EA;
+  border:1.5px solid #fff;box-shadow:0 2px 8px rgba(150,120,80,0.18)}
+.avaPhotoCur .avaImg,.avaPhotoCur img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 50%;border-radius:50%}
+.avaPhotoBtn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:9px 10px;border-radius:14px;
+  border:1.5px dashed rgba(228,88,79,0.45);background:#FFF8F2;color:#C9553F;font-family:inherit;font-size:12.5px;font-weight:800}
+.avaPhotoBtn:active{transform:scale(.98);background:#FFF0E8}
+.avaPhotoDel{flex:none;min-height:44px;padding:9px 11px;border-radius:14px;border:1px solid rgba(140,120,90,0.22);background:#fff;
+  color:#8A7A66;font-family:inherit;font-size:11.5px;font-weight:700}
+img.avaImg.ph{object-position:50% 50%;background:#fff}
 .sheetBtns{display:flex;gap:8px;margin-top:12px}
 .sheetBtns .mini,.sheetBtns .bigBtn{flex:1;height:44px;border-radius:13px;font-size:12.5px}
 .sheetBtns .bigBtn.primary{background:linear-gradient(168deg,#F07A62,#E4584F);color:#fff;border-color:transparent;
@@ -904,7 +914,19 @@ body{letter-spacing:0;line-height:1.5}
     var c = CHARACTERS.filter(function (x) { return x.key === k; })[0];
     return c ? c.name : '아냐';
   }
+  /* 내가 올린 프로필 사진(data URL)은 캐릭터보다 먼저 써요 */
+  function normAvaPhoto(v) {
+    if (typeof v !== 'string') return '';
+    if (v.indexOf('data:image/') !== 0) return '';
+    if (v.length > 120000) return '';
+    return v;
+  }
   function avaHTML(m, extra) {
+    var ph = (m && typeof m.avaPhoto === 'string') ? m.avaPhoto : '';
+    if (ph) {
+      return '<img class="avaImg ph' + (extra ? ' ' + extra : '') + '" src="' + ph +
+        '" alt="' + esc((m && m.name) || '') + ' 프로필 사진" loading="lazy">';
+    }
     var k = charKey(m && m.ava);
     return '<img class="avaImg' + (extra ? ' ' + extra : '') + '" src="' + AVATAR_DATA[k] +
       '" alt="' + charName(k) + '" loading="lazy">';
@@ -956,7 +978,7 @@ body{letter-spacing:0;line-height:1.5}
     return {
       v: 1,
       settings: { appName: '곱창걸', me: 'm1', lastSync: '', albumLink: { url: '', label: '' } },
-      members: DEFAULT_MEMBERS.map(function (m) { return { id: m.id, name: m.name, nick: m.nick, emoji: m.emoji, ava: m.ava, birth: '', phone: '' }; }),
+      members: DEFAULT_MEMBERS.map(function (m) { return { id: m.id, name: m.name, nick: m.nick, emoji: m.emoji, ava: m.ava, avaPhoto: '', birth: '', phone: '' }; }),
       status: {},
       notices: [],
       q: { date: '', answers: {} },
@@ -992,7 +1014,7 @@ body{letter-spacing:0;line-height:1.5}
     var seen = {};
     out.members = d.members.map(function (base, i) {
       var m = Array.isArray(src.members) ? src.members[i] : null;
-      var o = { id: base.id, name: base.name, nick: base.nick, emoji: base.emoji, ava: base.ava, birth: '', phone: '' };
+      var o = { id: base.id, name: base.name, nick: base.nick, emoji: base.emoji, ava: base.ava, avaPhoto: '', birth: '', phone: '' };
       if (m && typeof m === 'object') {
         if (typeof m.name === 'string' && m.name.trim()) o.name = String(m.name).slice(0, 12);
         if (typeof m.nick === 'string') o.nick = String(m.nick).slice(0, 12);
@@ -1000,6 +1022,7 @@ body{letter-spacing:0;line-height:1.5}
         if (typeof m.ava === 'string') {
           o.ava = AVATAR_DATA[m.ava] ? m.ava : (OLD_AVA[m.ava] || base.ava);
         }
+        o.avaPhoto = normAvaPhoto(m.avaPhoto);
         o.birth = normBirth(m.birth);
         o.phone = normPhone(m.phone);
       }
@@ -1432,6 +1455,8 @@ body{letter-spacing:0;line-height:1.5}
     statusDraft.e = s.e || m.emoji || '☕';
     openSheet(
       '<h3>한 줄 남기기</h3><p class="sub">' + esc(m.name) + ' 님의 근황</p>' +
+      '<div class="avaPhotoRow"><span class="avaPhotoCur">' + avaHTML(m) + '</span>' +
+        '<button class="avaPhotoBtn" data-act="memEmoji" data-mid="' + mid + '">📷 사진·캐릭터 바꾸기</button></div>' +
       '<input class="sheetInput" id="stText" maxlength="30" autocomplete="off" placeholder="예: 카페에서 책 읽는 중" value="' + esc(s.t || '') + '">' +
       (m.phone
         ? '<div class="phoneRow"><a class="callBtn" href="' + esc(telHref(m.phone)) + '">📞 ' + esc(m.phone) + '</a>' +
@@ -2136,6 +2161,43 @@ body{letter-spacing:0;line-height:1.5}
     });
   }
 
+  /* 프로필 사진: 가운데를 정사각으로 잘라 180px → WebP(안 되면 JPEG)로 가볍게 (~15KB 이하) */
+  function avaDataBytes(u) { return Math.round(String(u || '').length * 0.75); }
+  function cropSquareAva(img, size, q) {
+    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return '';
+    var s = Math.min(w, h);
+    var sx = Math.max(0, Math.round((w - s) / 2)), sy = Math.max(0, Math.round((h - s) / 2));
+    var c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    var ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    if (ctx.imageSmoothingQuality) ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+    var out = c.toDataURL('image/webp', q);
+    if (out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/jpeg', q);
+    return out;
+  }
+  function shrinkAva(file) {
+    return new Promise(function (resolve, reject) {
+      var src = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var tries = [[180, 0.82], [180, 0.72], [180, 0.62], [180, 0.52], [160, 0.55], [144, 0.6]];
+        var best = '';
+        for (var i = 0; i < tries.length; i++) {
+          best = cropSquareAva(img, tries[i][0], tries[i][1]);
+          if (best && avaDataBytes(best) <= 15 * 1024) break;
+        }
+        URL.revokeObjectURL(src);
+        if (!best) { reject(new Error('프로필 사진을 만들지 못했어요')); return; }
+        resolve(best);
+      };
+      img.onerror = function () { URL.revokeObjectURL(src); reject(new Error('사진을 읽지 못했어요')); };
+      img.src = src;
+    });
+  }
+
   /* ══════════════ 공유 사진첩 (우리끼리 드라이브) ══════════════ */
   var albumSig = '', pendingAlbum = [], lightboxId = '';
 
@@ -2431,9 +2493,19 @@ body{letter-spacing:0;line-height:1.5}
     var m = mem(mid);
     memEmojiTarget = mid;
     var ck = charKey(m.ava);
-    openSheet('<h3>' + esc(m.name) + ' 님의 캐릭터</h3><p class="sub">캐릭터를 골라 주세요</p>' +
+    var hasPhoto = !!m.avaPhoto;
+    openSheet('<h3>' + esc(m.name) + ' 님의 프로필</h3><p class="sub">내 폰에서 사진을 올리거나 캐릭터를 골라 주세요</p>' +
+      '<div class="avaPhotoRow">' +
+        '<span class="avaPhotoCur">' + avaHTML(m) + '</span>' +
+        '<button class="avaPhotoBtn" data-act="pickAvaPhoto">📷 내 사진 올리기</button>' +
+        (hasPhoto ? '<button class="avaPhotoDel" data-act="clearAvaPhoto" aria-label="올린 사진 지우기">지우기</button>' : '') +
+      '</div>' +
+      '<p class="sub" style="margin:0 0 8px">' +
+        (hasPhoto ? '지금은 내가 올린 사진으로 보여요' : '사진을 올리면 카톡 프사처럼 동그랗게 꽉 차요') + '</p>' +
+      '<input type="file" id="avaPhotoFile" accept="image/*" hidden>' +
+      '<h3 style="margin-top:2px">캐릭터</h3><p class="sub">사진 대신 캐릭터로도 쓸 수 있어요</p>' +
       '<div class="charGrid">' + CHARACTERS.map(function (c) {
-        return '<button class="charPick' + (c.key === ck ? ' on' : '') + '" data-act="setMemAva" data-k="' + c.key + '">' +
+        return '<button class="charPick' + (!hasPhoto && c.key === ck ? ' on' : '') + '" data-act="setMemAva" data-k="' + c.key + '">' +
           '<img src="' + AVATAR_DATA[c.key] + '" alt="' + esc(c.name) + '"><span>' + esc(c.name) + '</span></button>';
       }).join('') + '</div>' +
       '<h3 style="margin-top:2px">표정 스티커</h3><p class="sub">근황 앞에 붙는 이모지</p>' +
@@ -3107,9 +3179,21 @@ body{letter-spacing:0;line-height:1.5}
       /* 설정 */
       case 'saveSettings': saveSettings(); break;
       case 'memEmoji': openEmojiFor(t.dataset.mid); break;
+      case 'pickAvaPhoto': {
+        var apf = $('#avaPhotoFile');
+        if (apf) apf.click();
+        break;
+      }
+      case 'clearAvaPhoto': {
+        var mac = mem(memEmojiTarget);
+        if (mac) mac.avaPhoto = '';
+        commit(mac ? mac.name + ' 님 사진을 지우고 캐릭터로 돌아갔어요' : '사진을 지웠어요');
+        if (memEmojiTarget) openEmojiFor(memEmojiTarget);
+        break;
+      }
       case 'setMemAva': {
         var ma = mem(memEmojiTarget);
-        if (ma) ma.ava = charKey(t.dataset.k);
+        if (ma) { ma.ava = charKey(t.dataset.k); ma.avaPhoto = ''; }
         closeSheet();
         commit(ma ? charName(ma.ava) + ' 캐릭터로 바꿨어요' : '캐릭터를 바꿨어요');
         break;
@@ -3197,6 +3281,20 @@ body{letter-spacing:0;line-height:1.5}
     } else if (t.id === 'importFile') {
       handleImportFile(t.files && t.files[0]);
       t.value = '';
+    } else if (t.id === 'avaPhotoFile') {
+      var af = t.files && t.files[0];
+      var aTarget = memEmojiTarget;
+      t.value = '';
+      if (af) {
+        toast('프로필 사진을 다듬는 중…');
+        shrinkAva(af).then(function (avaUrl) {
+          var am = mem(aTarget);
+          if (!am || !avaUrl) { toast('사진을 읽지 못했어요'); return; }
+          am.avaPhoto = avaUrl;
+          commit(am.name + ' 님 사진을 올렸어요 📷');
+          if (memEmojiTarget === aTarget) openEmojiFor(aTarget);
+        }).catch(function () { toast('사진을 읽지 못했어요'); });
+      }
     }
   });
 
