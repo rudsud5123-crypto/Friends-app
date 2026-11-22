@@ -1,7 +1,7 @@
 {
-  "name": "곱창걸 모임",
+  "name": "곱창걸",
   "short_name": "곱창걸",
-  "description": "경녕·서형·혜림·화영 네 사람의 아지트 — 근황, 약속, 위시, 뽑기, 사진첩",
+  "description": "곱창걸 · 근황, 약속, 위시, 뽑기, 사진첩",
   "lang": "ko",
   "dir": "ltr",
   "start_url": "./index.html",
